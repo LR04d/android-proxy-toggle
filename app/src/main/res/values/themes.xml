@@ -1,0 +1,4 @@
+<resources>
+    <!-- Base application theme. -->
+    <style name="Theme.ProxyToggle" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+</resources>

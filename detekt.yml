@@ -1,0 +1,16 @@
+formatting:
+  autoCorrect: true
+  AnnotationOnSeparateLine:
+    active: false
+  FinalNewline:
+    active: true
+
+naming:
+  FunctionMaxLength:
+    active: false
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+
+style:
+  NewLineAtEndOfFile:
+    active: true
