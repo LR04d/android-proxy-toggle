@@ -8,11 +8,11 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kinandcarta.create.proxytoggle.R
 import com.kinandcarta.create.proxytoggle.core.common.proxy.Proxy
 import com.kinandcarta.create.proxytoggle.core.common.proxy.ProxyMode
 import com.kinandcarta.create.proxytoggle.core.common.proxy.ProxyProfile
 import com.kinandcarta.create.proxytoggle.core.common.proxy.ProxyValidator
-import com.kinandcarta.create.proxytoggle.manager.R
 import com.kinandcarta.create.proxytoggle.repository.appdata.AppDataRepository
 import com.kinandcarta.create.proxytoggle.repository.devicesettings.DeviceSettingsManager
 import com.kinandcarta.create.proxytoggle.repository.profile.ProfileRepository

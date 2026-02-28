@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
+import com.kinandcarta.create.proxytoggle.R
 import com.kinandcarta.create.proxytoggle.core.common.intent.getAppLaunchIntent
 import com.kinandcarta.create.proxytoggle.core.common.proxy.Proxy
 import com.kinandcarta.create.proxytoggle.repository.appdata.AppDataRepository

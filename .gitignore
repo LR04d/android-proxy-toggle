@@ -113,3 +113,4 @@ $RECYCLE.BIN/
 # (Remove the next two lines if you want to track snapshots)
 # **/snapshots/images/
 # **/snapshots/failures/
+Task.md

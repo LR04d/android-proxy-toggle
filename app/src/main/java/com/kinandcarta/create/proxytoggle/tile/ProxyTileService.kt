@@ -4,6 +4,7 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import androidx.annotation.RequiresApi
+import com.kinandcarta.create.proxytoggle.R
 import com.kinandcarta.create.proxytoggle.core.common.intent.getAppLaunchIntent
 import com.kinandcarta.create.proxytoggle.repository.appdata.AppDataRepository
 import com.kinandcarta.create.proxytoggle.repository.devicesettings.DeviceSettingsManager

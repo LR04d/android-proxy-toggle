@@ -13,7 +13,7 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import com.kinandcarta.create.proxytoggle.core.common.R
+import com.kinandcarta.create.proxytoggle.R
 import com.kinandcarta.create.proxytoggle.core.common.proxy.Proxy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +38,7 @@ import java.io.IOException
 class ProxyVpnService : VpnService() {
 
     private var vpnInterface: ParcelFileDescriptor? = null
+
     @Volatile
     private var running = false
     private var drainThread: Thread? = null
@@ -162,7 +163,7 @@ class ProxyVpnService : VpnService() {
             // Our app's connections (e.g., to check proxy status) bypass the VPN
             try {
                 builder.addDisallowedApplication(packageName)
-            } catch (e: Exception) {
+            } catch (e: android.content.pm.PackageManager.NameNotFoundException) {
                 Log.w(TAG, "Could not exclude app from VPN", e)
             }
 
@@ -220,7 +221,10 @@ class ProxyVpnService : VpnService() {
                     input.close()
                 } catch (_: IOException) { }
             }
-        }, "vpn-tun-drain").also { it.isDaemon = true; it.start() }
+        }, "vpn-tun-drain").also {
+            it.isDaemon = true
+            it.start()
+        }
     }
 
     private fun stopVpnConnection() {
@@ -235,7 +239,7 @@ class ProxyVpnService : VpnService() {
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             Log.i(TAG, "VPN stopped")
-        } catch (e: Exception) {
+        } catch (e: IOException) {
             Log.e(TAG, "Error stopping VPN", e)
         }
     }
@@ -268,7 +272,9 @@ class ProxyVpnService : VpnService() {
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName)
         val launchPendingIntent = launchIntent?.let {
             PendingIntent.getActivity(
-                this, 0, it,
+                this,
+                0,
+                it,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
             )
         }

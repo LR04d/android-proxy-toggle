@@ -48,13 +48,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.kinandcarta.create.proxytoggle.R
 import com.kinandcarta.create.proxytoggle.core.common.proxy.Proxy
 import com.kinandcarta.create.proxytoggle.core.common.proxy.ProxyMode
 import com.kinandcarta.create.proxytoggle.core.common.proxy.ProxyProfile
 import com.kinandcarta.create.proxytoggle.core.ui.theme.BluishGrey
 import com.kinandcarta.create.proxytoggle.core.ui.theme.ProxyToggleTheme
 import com.kinandcarta.create.proxytoggle.core.ui.theme.StatusLabelTextStyle
-import com.kinandcarta.create.proxytoggle.manager.R
 import com.kinandcarta.create.proxytoggle.manager.annotation.DarkAndLightPreview
 import com.kinandcarta.create.proxytoggle.manager.annotation.LandscapeDarkAndLightPreview
 import com.kinandcarta.create.proxytoggle.manager.view.composable.ProfileSelectorBottomSheet

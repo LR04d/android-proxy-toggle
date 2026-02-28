@@ -4,6 +4,8 @@ plugins {
     id("proxytoggle.application.jacoco")
     id("proxytoggle.test")
     id("proxytoggle.hilt")
+    id("com.google.protobuf")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -25,24 +27,79 @@ android {
             )
         }
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+}
+
+hilt {
+    enableAggregatingTask = false
 }
 
 dependencies {
-    implementation(project(":feature:manager"))
-    implementation(project(":feature:tile"))
-    implementation(project(":feature:widget"))
-    implementation(project(":repository"))
-    implementation(project(":core:ui"))
-    implementation(project(":core:common"))
-
+    // Kotlin
     implementation(libs.kotlin.stdlib)
-    implementation(libs.com.google.android.material.material)
 
+    // Android / Material
+    implementation(libs.com.google.android.material.material)
+    implementation(libs.appcompat)
+
+    // Compose
     implementation(libs.compose.ui)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.material.icons.extended)
     implementation(libs.material3.window.size.clazz)
     implementation(libs.activity.compose)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.constraintlayout.compose)
+    implementation(libs.accompanist.systemuicontroller)
 
+    // Showkase
+    implementation(libs.showkase)
+    ksp(libs.showkase.processor)
+
+    // DataStore / Protobuf
+    implementation(libs.protobuf.javalite)
+    implementation(libs.datastore)
+    implementation(libs.datastore.preferences)
+
+    // Compose preview debug
+    debugImplementation(libs.lifecycle.viewmodel.savedstate)
+    debugImplementation(libs.customview.poolingcontainer)
+    debugImplementation(libs.compose.ui.test.manifest)
+
+    // Test
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
+    testImplementation(libs.core.testing)
+    testImplementation(libs.compose.ui.test)
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.test.ext.junit)
+    testImplementation(libs.test.parameter.injector)
+    testImplementation(libs.hamcrest.core)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.hilt.android.testing)
+    kaptTest(libs.hilt.android.compiler)
+    kspTest(libs.showkase.processor)
+}
+
+protobuf {
+    protoc {
+        artifact = libs.protoc.get().toString()
+    }
+
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+            }
+        }
+    }
 }

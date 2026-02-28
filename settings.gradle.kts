@@ -17,12 +17,5 @@ dependencyResolutionManagement {
 rootProject.name = "ProxyToggle"
 
 include(":app")
-include(":feature:manager")
-include(":feature:tile")
-include(":feature:widget")
-include(":repository")
-include(":core:ui")
-include(":core:common")
-include(":test-utils")
 
 
