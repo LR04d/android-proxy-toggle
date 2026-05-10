@@ -18,18 +18,21 @@ import com.kinandcarta.create.proxytoggle.core.common.proxy.Proxy
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.io.FileInputStream
 import java.io.IOException
 
 /**
  * VPN service that applies an HTTP proxy to the device using Android's VPN framework.
  *
  * How it works:
- * - Establishes a VPN tunnel, making it the device's default network (higher priority than WiFi/cellular)
- * - Uses [Builder.setHttpProxy] (API 29+) to configure the proxy on the VPN network
- * - All apps that respect the system proxy (Chrome, OkHttp, HttpURLConnection, etc.) will use the proxy
- * - A background thread drains the TUN interface to prevent buffer overflow
- * - Non-HTTP traffic flows through the underlying network normally
+ * - Establishes a VPN interface with [Builder.setHttpProxy] (API 29+)
+ * - The VPN becomes the device's default network (higher priority than WiFi/cellular)
+ * - Android advertises the proxy via the VPN network's [android.net.LinkProperties]
+ * - Apps that respect [android.net.ConnectivityManager.getDefaultProxy] (Chrome, OkHttp,
+ *   HttpURLConnection, Retrofit, etc.) will automatically route through the proxy
+ *
+ * IMPORTANT: This does NOT intercept/forward raw packets. Traffic is NOT routed through
+ * the TUN interface. Only the proxy hint is set on the VPN network. Apps that ignore
+ * the system proxy will connect directly.
  *
  * Requires VPN permission: call [prepare] first and handle the result before [startVpn].
  */
@@ -38,9 +41,6 @@ import java.io.IOException
 class ProxyVpnService : VpnService() {
 
     private var vpnInterface: ParcelFileDescriptor? = null
-    @Volatile
-    private var running = false
-    private var drainThread: Thread? = null
 
     companion object {
         private const val TAG = "ProxyVpnService"
@@ -52,10 +52,6 @@ class ProxyVpnService : VpnService() {
         private const val EXTRA_PROXY_PORT = "proxy_port"
         private const val VPN_ADDRESS = "10.0.0.2"
         private const val VPN_PREFIX_LENGTH = 32
-        private const val VPN_ROUTE = "0.0.0.0"
-        private const val VPN_ROUTE_PREFIX = 0
-        private const val MTU_VALUE = 1500
-        private const val BUFFER_SIZE = 32767
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -142,24 +138,24 @@ class ProxyVpnService : VpnService() {
         }
 
         try {
+            // Configure VPN with proxy hint only — NO route capture.
+            // We assign a TUN address (required by VpnService) but do NOT add any routes.
+            // This means no traffic enters the TUN interface — data flows through the
+            // underlying network normally. The VPN's only purpose is to advertise the
+            // HTTP proxy via setHttpProxy(), making it the system default proxy.
             val builder = Builder()
                 .setSession("ProxyToggle")
                 .addAddress(VPN_ADDRESS, VPN_PREFIX_LENGTH)
-                .addRoute(VPN_ROUTE, VPN_ROUTE_PREFIX)
-                .addDnsServer("8.8.8.8")
-                .addDnsServer("8.8.4.4")
-                .setMtu(MTU_VALUE)
-                .setBlocking(true)
                 .setMetered(false)
 
-            // Set HTTP proxy on the VPN network - this is the key mechanism
-            // Android will advertise this proxy to all apps via the VPN's network properties
+            // Set HTTP proxy on the VPN network — this is the key mechanism.
+            // Android advertises this proxy to all apps via the VPN's LinkProperties.
+            // Apps using ConnectivityManager.getDefaultProxy() will see this proxy.
             builder.setHttpProxy(
                 ProxyInfo.buildDirectProxy(proxy.address, proxy.port.toInt())
             )
 
-            // Exclude our own app from VPN routes to prevent routing loops
-            // Our app's connections (e.g., to check proxy status) bypass the VPN
+            // Exclude our own app from VPN to prevent routing loops
             try {
                 builder.addDisallowedApplication(packageName)
             } catch (e: Exception) {
@@ -169,11 +165,9 @@ class ProxyVpnService : VpnService() {
             vpnInterface = builder.establish()
 
             if (vpnInterface != null) {
-                running = true
                 _isRunning.value = true
                 _currentProxy.value = proxy
                 startForeground(NOTIFICATION_ID, createNotification(proxy))
-                startTunDrainThread()
                 Log.i(TAG, "VPN started with proxy ${proxy.address}:${proxy.port}")
             } else {
                 Log.e(TAG, "VPN establish() returned null - permission may not be granted")
@@ -191,43 +185,8 @@ class ProxyVpnService : VpnService() {
         }
     }
 
-    /**
-     * Drain the TUN interface to prevent packet buffer overflow.
-     * Since we route all traffic through VPN (for the proxy to be applied),
-     * we need to read packets from TUN. The actual proxying is handled by
-     * Android's HTTP stack via setHttpProxy().
-     *
-     * Non-HTTP traffic read from TUN is discarded - this is a known limitation.
-     * For most use cases (web browsing, API calls), HTTP proxy via setHttpProxy() is sufficient.
-     */
-    private fun startTunDrainThread() {
-        drainThread = Thread({
-            val fd = vpnInterface?.fileDescriptor ?: return@Thread
-            val input = FileInputStream(fd)
-            val buffer = ByteArray(BUFFER_SIZE)
-            try {
-                while (running) {
-                    val length = input.read(buffer)
-                    if (length < 0) break
-                    // Packets are drained; HTTP(S) traffic is proxied by Android via setHttpProxy()
-                }
-            } catch (e: IOException) {
-                if (running) {
-                    Log.w(TAG, "TUN drain thread interrupted", e)
-                }
-            } finally {
-                try {
-                    input.close()
-                } catch (_: IOException) { }
-            }
-        }, "vpn-tun-drain").also { it.isDaemon = true; it.start() }
-    }
-
     private fun stopVpnConnection() {
-        running = false
         try {
-            drainThread?.interrupt()
-            drainThread = null
             vpnInterface?.close()
             vpnInterface = null
             _isRunning.value = false
@@ -284,3 +243,4 @@ class ProxyVpnService : VpnService() {
             .build()
     }
 }
+
